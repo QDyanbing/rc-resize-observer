@@ -1,58 +1,130 @@
-# rc-resize-observer
+<div align="center">
+  <h1>@rc-component/resize-observer</h1>
+  <p><sub><img alt="Ant Design" height="14" src="https://gw.alipayobjects.com/zos/rmsportal/KDpgvguMpGfqaHPjicRK.svg" style="vertical-align: -0.125em;" /> Part of the Ant Design ecosystem.</sub></p>
+  <p>📏 React ResizeObserver wrapper with render-prop and batch collection support.</p>
 
-[![NPM version][npm-image]][npm-url] [![dumi](https://img.shields.io/badge/docs%20by-dumi-blue?style=flat-square)](https://github.com/umijs/dumi) [![build status][github-actions-image]][github-actions-url] [![Codecov][codecov-image]][codecov-url] [![npm download][download-image]][download-url]
+  <p>
+    <a href="https://npmjs.org/package/@rc-component/resize-observer"><img alt="NPM version" src="https://img.shields.io/npm/v/@rc-component/resize-observer.svg?style=flat-square"></a>
+    <a href="https://npmjs.org/package/@rc-component/resize-observer"><img alt="npm downloads" src="https://img.shields.io/npm/dm/@rc-component/resize-observer.svg?style=flat-square"></a>
+    <a href="https://github.com/react-component/resize-observer/actions/workflows/react-component-ci.yml"><img alt="build status" src="https://github.com/react-component/resize-observer/actions/workflows/react-component-ci.yml/badge.svg"></a>
+    <a href="https://app.codecov.io/gh/react-component/resize-observer"><img alt="Codecov" src="https://img.shields.io/codecov/c/github/react-component/resize-observer/master.svg?style=flat-square"></a>
+    <a href="https://bundlephobia.com/package/@rc-component/resize-observer"><img alt="bundle size" src="https://img.shields.io/bundlephobia/minzip/@rc-component/resize-observer?style=flat-square"></a>
+    <a href="https://github.com/umijs/dumi"><img alt="dumi" src="https://img.shields.io/badge/docs%20by-dumi-blue?style=flat-square"></a>
+  </p>
+</div>
 
-[npm-image]: http://img.shields.io/npm/v/rc-resize-observer.svg?style=flat-square
-[npm-url]: http://npmjs.org/package/rc-resize-observer
-[github-actions-image]: https://github.com/react-component/resize-observer/workflows/CI/badge.svg
-[github-actions-url]: https://github.com/react-component/resize-observer/actions
-[codecov-image]: https://img.shields.io/codecov/c/github/react-component/resize-observer/master.svg?style=flat-square
-[codecov-url]: https://codecov.io/gh/react-component/resize-observer/branch/master
-[download-image]: https://img.shields.io/npm/dm/rc-resize-observer.svg?style=flat-square
-[download-url]: https://npmjs.org/package/rc-resize-observer
+<p align="center">English | <a href="./README.zh-CN.md">简体中文</a></p>
 
-Resize observer for React.
 
-## Live Demo
+## Highlights
 
-https://resize-observer-react-component.vercel.app/
+- Observes resize changes for a single React child.
+- Supports render props when the observed element is not the direct child.
+- Batches multiple child resize events with `ResizeObserver.Collection`.
+- Reports both bounding-box and offset sizes.
 
 ## Install
 
-[![rc-resize-observer](https://nodei.co/npm/rc-resize-observer.png)](https://npmjs.org/package/rc-resize-observer)
+```bash
+npm install @rc-component/resize-observer
+```
 
 ## Usage
 
-```js
-import ResizeObserver from 'rc-resize-observer';
-import { render } from 'react-dom';
+```tsx pure
+import ResizeObserver from '@rc-component/resize-observer';
 
-render(
+export default () => (
   <ResizeObserver
-    onResize={() => {
-      console.log('resized!');
+    onResize={(size, element) => {
+      console.log(size.width, size.height, element);
     }}
   >
     <textarea />
-  </ResizeObserver>,
-  mountNode,
+  </ResizeObserver>
 );
 ```
 
-## API
+```tsx pure
+import ResizeObserver from '@rc-component/resize-observer';
 
-| Property | Type                        | Default | Description                     |
-| -------- | --------------------------- | ------- | ------------------------------- |
-| disabled | boolean                     | false   |                                 |
-| onResize | ({ width, height }) => void | -       | Trigger when child node resized |
-
-## Development
-
+export default () => (
+  <ResizeObserver.Collection
+    onBatchResize={infoList => {
+      console.log(infoList.map(({ data, size }) => [data, size.width]));
+    }}
+  >
+    <ResizeObserver data="left">
+      <div>Left</div>
+    </ResizeObserver>
+    <ResizeObserver data="right">
+      <div>Right</div>
+    </ResizeObserver>
+  </ResizeObserver.Collection>
+);
 ```
+
+Online preview: https://resize-observer.react-component.vercel.app/
+
+## Examples
+
+Run the local dumi site:
+
+```bash
 npm install
 npm start
 ```
 
+Then open `http://localhost:8000`.
+
+## API
+
+### ResizeObserver
+
+| Name       | Type                                                           | Default | Description                                                          |
+| ---------- | -------------------------------------------------------------- | ------- | -------------------------------------------------------------------- |
+| `children` | ReactNode \| `(ref: React.RefObject<Element>) => ReactElement` | -       | Element to observe, or a render function receiving the observer ref. |
+| `data`     | any                                                            | -       | Extra payload passed to `ResizeObserver.Collection` callbacks.       |
+| `disabled` | boolean                                                        | false   | Disable resize observation.                                          |
+| `onResize` | `(size: SizeInfo, element: HTMLElement) => void`               | -       | Triggered when the observed element size changes.                    |
+
+### SizeInfo
+
+| Name           | Type   | Description                                                                        |
+| -------------- | ------ | ---------------------------------------------------------------------------------- |
+| `height`       | number | Floored bounding-box height.                                                       |
+| `offsetHeight` | number | Element offset height, normalized when it matches the rounded bounding-box height. |
+| `offsetWidth`  | number | Element offset width, normalized when it matches the rounded bounding-box width.   |
+| `width`        | number | Floored bounding-box width.                                                        |
+
+### ResizeObserver.Collection
+
+| Name            | Type                                 | Default | Description                                                          |
+| --------------- | ------------------------------------ | ------- | -------------------------------------------------------------------- |
+| `children`      | ReactNode                            | -       | Observers to collect.                                                |
+| `onBatchResize` | `(resizeInfo: ResizeInfo[]) => void` | -       | Triggered once per microtask with all collected child resize events. |
+
+## Development
+
+```bash
+npm install
+npm start
+npm test
+npm run tsc
+npm run compile
+npm run build
+```
+
+The dumi site runs at `http://localhost:8000` by default.
+
+## Release
+
+```bash
+npm run prepublishOnly
+```
+
+The release flow is handled by `@rc-component/np` through the `rc-np` command after the package build.
+
 ## License
 
-rc-resize-observer is released under the MIT license.
+@rc-component/resize-observer is released under the [MIT](./LICENSE) license.
